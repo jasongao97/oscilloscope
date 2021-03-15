@@ -45,7 +45,7 @@ const scene = new THREE.Scene();
  * Textures
  */
 const textureLoader = new THREE.TextureLoader();
-const particleTexture = textureLoader.load("/textures/particle.png");
+const particleTexture = textureLoader.load("./textures/particle.png");
 
 /**
  * Particles
