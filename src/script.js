@@ -19,6 +19,7 @@ const debugObject = {
     gain: 1,
     frequency: 1,
   },
+  phaseOffset: 0,
   speed: 1,
   clear: () => {
     particlesArray = [];
@@ -34,6 +35,7 @@ vFolder.open();
 vFolder.add(debugObject.vertical, "gain", 0, 10, 0.01);
 vFolder.add(debugObject.vertical, "frequency", 1, 1000, 0.01);
 
+gui.add(debugObject, "phaseOffset", -180, 180, 0.1).name("phase offset");
 gui.add(debugObject, "speed", 1, 200, 1).name("subframe");
 gui.add(debugObject, "clear").name("Clear");
 
@@ -236,7 +238,8 @@ const updateParticles = (elapsedTime) => {
             (elapsedTime + 20 / debugObject.speed / 60) *
               Math.PI *
               2 *
-              debugObject.horizontal.frequency
+              debugObject.horizontal.frequency +
+              (debugObject.phaseOffset / 180) * Math.PI
           ) /
             500) *
             debugObject.horizontal.gain
