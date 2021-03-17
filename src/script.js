@@ -12,27 +12,29 @@ import { Particle } from "./physics";
 const gui = new dat.GUI();
 const debugObject = {
   horizontal: {
-    gain: 0.8,
-    period: 4,
+    gain: 1,
+    frequency: 1,
   },
   vertical: {
-    gain: 0.8,
-    period: 3,
+    gain: 1,
+    frequency: 1,
   },
+  speed: 1,
   clear: () => {
     particlesArray = [];
   },
 };
 const hFolder = gui.addFolder("Horizontal");
 hFolder.open();
-hFolder.add(debugObject.horizontal, "gain", 0, 2, 0.01);
-hFolder.add(debugObject.horizontal, "period", 1, 4, 1);
+hFolder.add(debugObject.horizontal, "gain", 0, 10, 0.01);
+hFolder.add(debugObject.horizontal, "frequency", 1, 1000, 0.01);
 
 const vFolder = gui.addFolder("Vertical");
 vFolder.open();
-vFolder.add(debugObject.vertical, "gain", 0, 2, 0.01);
-vFolder.add(debugObject.vertical, "period", 1, 4, 1);
+vFolder.add(debugObject.vertical, "gain", 0, 10, 0.01);
+vFolder.add(debugObject.vertical, "frequency", 1, 1000, 0.01);
 
+gui.add(debugObject, "speed", 1, 200, 1).name("subframe");
 gui.add(debugObject, "clear").name("Clear");
 
 // Canvas
@@ -86,7 +88,7 @@ generator.position.x = -4;
 scene.add(generator);
 
 // Plate
-const plateGeometry = new THREE.BoxGeometry(1.1, 0.1, 1);
+const plateGeometry = new THREE.BoxGeometry(1.1, 0.05, 1);
 const plateMaterial = new THREE.MeshNormalMaterial();
 
 const plateTop = new THREE.Mesh(plateGeometry, plateMaterial);
@@ -197,9 +199,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
  */
 const clock = new THREE.Clock();
 
-const tick = () => {
-  const elapsedTime = clock.getElapsedTime();
-
+const updateParticles = (elapsedTime) => {
   // Update particles;
   particlesArray.forEach((particle) => {
     // calculate accellaration
@@ -212,7 +212,10 @@ const tick = () => {
       particle.applyForce(
         new THREE.Vector3(
           0,
-          (Math.sin(elapsedTime * debugObject.vertical.period) / 4000) *
+          (Math.sin(
+            elapsedTime * Math.PI * 2 * debugObject.vertical.frequency
+          ) /
+            500) *
             debugObject.vertical.gain,
           0
         )
@@ -229,39 +232,56 @@ const tick = () => {
         new THREE.Vector3(
           0,
           0,
-          (Math.sin(elapsedTime * debugObject.horizontal.period) / 4000) *
+          (Math.sin(
+            (elapsedTime + 20 / debugObject.speed / 60) *
+              Math.PI *
+              2 *
+              debugObject.horizontal.frequency
+          ) /
+            500) *
             debugObject.horizontal.gain
         )
       );
     }
 
-    if (
-      particle.pos.x > 4 &&
-      particle.pos.y > -3 &&
-      particle.pos.y < 3 &&
-      particle.pos.z > -3 &&
-      particle.pos.z < 3
-    ) {
+    if (particle.pos.x > 3.999) {
       particle.fade();
-      particle.pos.x = 4.001;
-      particle.vel.set(0, 0, 0);
+      if (
+        particle.pos.y > -3 &&
+        particle.pos.y < 3 &&
+        particle.pos.z > -3 &&
+        particle.pos.z < 3
+      ) {
+        particle.pos.x = 4.001;
+        particle.vel.set(0, 0, 0);
+      }
     }
 
     particle.update();
   });
-
-  // remove dead one
-  particlesArray = particlesArray.filter((particle) => !particle.isDead());
-  updateParticleAttributes();
 
   particlesArray.push(
     new Particle({
       x: -4,
       y: 0,
       z: 0,
-      velX: 0.025,
+      velX: 0.1,
     })
   );
+};
+
+const tick = () => {
+  const elapsedTime = clock.elapsedTime;
+  const deltaTime = clock.getDelta();
+
+  for (let i = 0; i < debugObject.speed; i++) {
+    updateParticles(elapsedTime + (deltaTime / debugObject.speed) * i);
+  }
+
+  // remove dead one
+  particlesArray = particlesArray.filter((particle) => !particle.isDead());
+  updateParticleAttributes();
+  console.log(particlesArray.length);
 
   // Update controls
   controls.update();
